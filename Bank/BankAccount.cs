@@ -4,7 +4,6 @@ using System.Text;
 
 namespace bank;
 
-// Добавляем перечисление статусов в пространство имен
 public enum AccountStatus { Regular, Premium, VIP }
 
 /// <summary>
@@ -40,6 +39,7 @@ public class BankAccount
             return balance;
         }
     }
+
     /// <summary>
     /// Создает новый расчетный счет с привязкой к клиенту и фиксацией стартового баланса.
     /// </summary>
@@ -49,6 +49,7 @@ public class BankAccount
     {
 
     }
+
     /// <summary>
     /// Создает новый расчетный счет с учетом ограничений по минимальному остатку.
     /// </summary>
@@ -66,6 +67,7 @@ public class BankAccount
         if (initialBalance > 0)
             MakeDeposit(initialBalance, DateTime.UtcNow, "Initial balance");
     }
+
     /// <summary>
     /// Выполняет операцию пополнения счета на указанную сумму с добавлением описания.
     /// </summary>
@@ -81,7 +83,11 @@ public class BankAccount
         }
         var deposit = new Transaction(amount, date, note);
         _allTransactions.Add(deposit);
+
+        // Внедрение аудита: запись операции пополнения
+        AuditLog.Log(Number, "Deposit", amount, date);
     }
+
     /// <summary>
     /// Осуществляет списание денежных средств со счета, проверяя доступные лимиты.
     /// </summary>
@@ -99,7 +105,11 @@ public class BankAccount
 
         if (overdraftTransaction is not null)
             _allTransactions.Add(overdraftTransaction);
+
+        // Внедрение аудита: запись операции списания
+        AuditLog.Log(Number, "Withdrawal", amount, date);
     }
+
     protected virtual Transaction? CheckWithdrawalLimit(bool isOverdrawn)
     {
         if (isOverdrawn)
@@ -111,6 +121,7 @@ public class BankAccount
             return default;
         }
     }
+
     /// <summary>
     /// Формирует детализированный отчет по всем движениям денежных средств на аккаунте.
     /// </summary>
@@ -129,20 +140,17 @@ public class BankAccount
         }
         return report.ToString();
     }
-    // Ключевое слово virtual позволяет в дочернем классе предоставить другую реализацию 
-    // Метода PerformMonthAndTransactions
+
     /// <summary>
     /// Запускает регламентные процедуры обработки счетов по завершении расчетного периода.
     /// </summary>
     public virtual void PerformMonthAndTransactions()
     {
-        // Начисление комиссии для Regular
         if (Status == AccountStatus.Regular)
         {
             MakeWithdrawal(50m, DateTime.UtcNow, "Monthly maintenance fee");
         }
 
-        // Проценты на остаток свыше 10 000 для Premium и VIP
         if ((Status == AccountStatus.Premium || Status == AccountStatus.VIP) && Balance > 10000m)
         {
             decimal excess = Balance - 10000m;
@@ -154,7 +162,6 @@ public class BankAccount
             }
         }
 
-        // Кэшбэк 5% для VIP на все списания за последний месяц
         if (Status == AccountStatus.VIP)
         {
             decimal totalWithdrawals = 0;
