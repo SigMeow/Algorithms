@@ -1,4 +1,7 @@
+using System;
+
 namespace bank;
+
 /// <summary>
 /// Описывает накопительную модель банковского счета, предусматривающую 
 /// регулярное процентное вознаграждение при сохранении минимального остатка.
@@ -15,19 +18,18 @@ public class InterestEarningAccount : BankAccount
     {
 
     }
-    // override позволяет в дочернем классе определить новую реализацию
-    // метода PerformMonthAndTransactions
     /// <summary>
-    /// Начисляет бонусные проценты на остаток средств, если 
-    /// текущие накопления превышают установленный минимальный порог.
+    /// Выполняет плановые ежемесячные начисления с учетом статуса клиента и базовой процентной ставки.
     /// </summary>
     public override void PerformMonthAndTransactions()
     {
+        // Вызываем базовый метод, чтобы применились правила статусов (комиссии, кэшбэки)
+        base.PerformMonthAndTransactions();
+
         if (Balance > 500m)
         {
             decimal interest = Balance * 0.02m;
             MakeDeposit(interest, DateTime.UtcNow, "Apply month interest");
         }
-
     }
 }

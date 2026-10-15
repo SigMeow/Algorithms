@@ -1,7 +1,12 @@
+using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace bank;
-//BankAccount - потомок класса object => можно переопределить виртуальные методы, такие как ToString(), Equals() и GetHashCode()
+
+// Добавляем перечисление статусов в пространство имен
+public enum AccountStatus { Regular, Premium, VIP }
+
 /// <summary>
 /// Описывает банковский аккаунт, поддерживающий финансовые операции 
 /// (зачисления, списания) и сохранение истории транзакций.
@@ -13,6 +18,12 @@ public class BankAccount
     public string Number { get; }
     public string Owner { get; private set; }
     private List<Transaction> _allTransactions = new List<Transaction>();
+
+    /// <summary>
+    /// Текущий статус клиента для расчета условий обслуживания.
+    /// </summary>
+    public AccountStatus Status { get; set; } = AccountStatus.Regular;
+
     /// <summary>
     /// Актуальный остаток денежных средств на счете, 
     /// рассчитанный на основе проведенных операций.
@@ -97,10 +108,7 @@ public class BankAccount
         }
         else
         {
-            // default - содержит значение по умолчанию,
-            // так как тип возвращаемого значения - ссылочный, то
-            // default = nul
-            return default; // == return null
+            return default;
         }
     }
     /// <summary>
@@ -128,11 +136,46 @@ public class BankAccount
     /// </summary>
     public virtual void PerformMonthAndTransactions()
     {
+        // Начисление комиссии для Regular
+        if (Status == AccountStatus.Regular)
+        {
+            MakeWithdrawal(50m, DateTime.UtcNow, "Monthly maintenance fee");
+        }
 
+        // Проценты на остаток свыше 10 000 для Premium и VIP
+        if ((Status == AccountStatus.Premium || Status == AccountStatus.VIP) && Balance > 10000m)
+        {
+            decimal excess = Balance - 10000m;
+            decimal rate = Status == AccountStatus.Premium ? 0.01m : 0.03m;
+            decimal interest = excess * rate;
+            if (interest > 0)
+            {
+                MakeDeposit(interest, DateTime.UtcNow, "Interest on balance over 10000");
+            }
+        }
+
+        // Кэшбэк 5% для VIP на все списания за последний месяц
+        if (Status == AccountStatus.VIP)
+        {
+            decimal totalWithdrawals = 0;
+            DateTime oneMonthAgo = DateTime.UtcNow.AddMonths(-1);
+
+            foreach (var tx in _allTransactions)
+            {
+                if (tx.Amount < 0 && tx.Date >= oneMonthAgo && !tx.Note.Contains("overdraft fee") && !tx.Note.Contains("maintenance fee"))
+                {
+                    totalWithdrawals += Math.Abs(tx.Amount);
+                }
+            }
+
+            decimal cashback = totalWithdrawals * 0.05m;
+            if (cashback > 0)
+            {
+                MakeDeposit(cashback, DateTime.UtcNow, "VIP 5% Cashback");
+            }
+        }
     }
 
-    // переопределяем метод базового класса - класса object 
-    // toString возвращает строку с информацией об объекте 
     /// <summary>
     /// Формирует сводную текстовую информацию о текущем состоянии и параметрах банковского счета.
     /// </summary>

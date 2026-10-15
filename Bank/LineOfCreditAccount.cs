@@ -1,4 +1,7 @@
+using System;
+
 namespace bank;
+
 /// <summary>
 /// Описывает кредитный банковский счет, предоставляющий доступ к заемным средствам 
 /// в рамках установленного лимита и предусматривающий комиссию за овердрафт.
@@ -18,8 +21,6 @@ public class LineOfCreditAccount : BankAccount
     {
         _creditLimit = creditLimit;
     }
-
-    // Разрешаем овердрафт по кредитной линии, но применяем комиссию при перерасходе
     /// <summary>
     /// Анализирует состояние баланса при списании и формирует 
     /// штрафную транзакцию в случае ухода в отрицательную зону.
@@ -28,10 +29,17 @@ public class LineOfCreditAccount : BankAccount
     /// <returns>Объект транзакции с удержанной комиссией или null, если лимит не нарушен</returns>
     protected override Transaction? CheckWithdrawalLimit(bool isOverdrawn)
     {
-        // если не овердрафт — всё в порядке
         if (!isOverdrawn) return null;
 
-        // при овердрафте взимаем фиксированную плату
         return new Transaction(-20m, DateTime.UtcNow, "Apply overdraft fee");
+    }
+
+    // В данном классе метод PerformMonthAndTransactions отсутствовал, добавляем его ради вызова базовых статусов
+    /// <summary>
+    /// Выполняет ежемесячный расчет комиссий по статусу для кредитной линии.
+    /// </summary>
+    public override void PerformMonthAndTransactions()
+    {
+        base.PerformMonthAndTransactions();
     }
 }
